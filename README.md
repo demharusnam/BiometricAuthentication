@@ -1,8 +1,9 @@
 #  BiometricAuthentication
 This is a simple demo app testing the use of biometric authentication to authenticate a user. This goes without saying but you need to install this app on a device that supports biometric authentication (FaceID, TouchID, or OpticID) in order to test it.
 
-## Supported Biometry
+<video src="https://github.com/user-attachments/assets/2f5f4faa-63c9-4ff2-9f87-ab6b4138ff06" width="444"></video>
 
+## Supported Biometry
 | Biometry | Supported | Tested |
 | -------- | -------- | -------- |
 | FaceID | YES | YES |
@@ -10,7 +11,6 @@ This is a simple demo app testing the use of biometric authentication to authent
 | OpticID | YES | NO |
 
 ## Project Details
-
 | Xcode | Minimum Deployments | Devices Tested |
 | -------- | -------- | -------- |
 | Xcode 16.1.0 | iOS 18.1 | iPhone 14 Pro Max |
