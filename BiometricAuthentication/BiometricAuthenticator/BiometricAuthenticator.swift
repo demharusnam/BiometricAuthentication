@@ -19,10 +19,23 @@ final actor BiometricAuthenticator: BiometricAuthentication {
     subsystem: Bundle.main.bundleIdentifier!,
     category: String(describing: BiometricAuthenticator.self)
   )
+  private var isPerformingBiometricAuthentication: Bool = false
   
   // MARK: - BiometricAuthentication
   
   func authenticate() async -> Result<Void, BiometricAuthenticationError> {
+    guard !isPerformingBiometricAuthentication else {
+      logger.error("Biometric authentication already in progress.")
+      return .failure(.alreadyAuthenticating)
+    }
+    
+    isPerformingBiometricAuthentication = true
+    defer { isPerformingBiometricAuthentication = false }
+    
+    // reset context on each authentication
+    context.invalidate()
+    context = LAContext()
+    
     guard canPerformBiometricAuthentication() else {
       return .failure(.unableToEvaluatePolicy(policy))
     }
@@ -31,18 +44,32 @@ final actor BiometricAuthenticator: BiometricAuthentication {
     
     do {
       try await context.evaluatePolicy(policy, localizedReason: LocalizedString.authenticationReason)
-      logger.debug("Biometric authentication evaluated successfully with policy \(self.policy)!")
+      
+      guard isPerformingBiometricAuthentication else {
+        logger.warning("Biometric authentication cancelled before evaluation.")
+        return .failure(.authenticationCancelled)
+      }
+      
+      logger.debug("Biometric authentication evaluated successfully with policy \(self.policy).")
       
       return .success(())
     } catch {
-      logger.error("Failed to evaluate biometric authentication for policy \(self.policy) with error: \(error)")
+      logger.error("Failed to evaluate biometric authentication for policy \(self.policy) with error: \(error).")
       
       return .failure(.authenticationFailed(error))
     }
   }
   
-  func deviceSupportsBiometricAuthentication() -> Bool {
-     canPerformBiometricAuthentication()
+  func deviceSupportsBiometricAuthentication() throws(BiometricAuthenticationError) -> Bool {
+    guard !isPerformingBiometricAuthentication else {
+      throw .cannotCheckForBiometricAuthenticationSupportWhileAuthenticating
+    }
+    
+    // reset context on each authentication
+    context.invalidate()
+    context = LAContext()
+    
+    return canPerformBiometricAuthentication()
   }
   
   var biometryType: LABiometryType {
@@ -54,17 +81,13 @@ final actor BiometricAuthenticator: BiometricAuthentication {
   private func canPerformBiometricAuthentication() -> Bool {
     logger.debug("Testing if can evaluate biometric authentication with policy \(self.policy)...")
     
-    // reset context on each authentication
-    context.invalidate()
-    context = LAContext()
-    
     var error: NSError?
     
     defer {
       if let error {
-        logger.error("Unable to test evaulation of \(self.policy) policy with error: \(error)")
+        logger.error("Unable to test evaulation of \(self.policy) policy with error: \(error).")
       } else {
-        logger.debug("Can perform biometric authentication with policy \(self.policy)!")
+        logger.debug("Can perform biometric authentication with policy \(self.policy).")
       }
     }
     

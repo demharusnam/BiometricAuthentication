@@ -6,5 +6,5 @@
 //
 
 protocol BiometricAuthenticationValidation: Actor {
-  func deviceSupportsBiometricAuthentication() -> Bool
+  func deviceSupportsBiometricAuthentication() throws -> Bool
 }

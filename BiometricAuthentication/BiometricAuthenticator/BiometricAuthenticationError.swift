@@ -10,4 +10,7 @@ import LocalAuthentication
 enum BiometricAuthenticationError: Error {
   case unableToEvaluatePolicy(_ policy: LAPolicy)
   case authenticationFailed(any Error)
+  case alreadyAuthenticating
+  case authenticationCancelled
+  case cannotCheckForBiometricAuthenticationSupportWhileAuthenticating
 }
