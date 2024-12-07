@@ -6,8 +6,13 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		52BA93C12D04CB6600E6415E /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = 52BA93C02D04CB6600E6415E /* README.md */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		52BA936C2D03A32E00E6415E /* BiometricAuthentication.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = BiometricAuthentication.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		52BA93C02D04CB6600E6415E /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -32,6 +37,7 @@
 		52BA93632D03A32E00E6415E = {
 			isa = PBXGroup;
 			children = (
+				52BA93C02D04CB6600E6415E /* README.md */,
 				52BA936E2D03A32E00E6415E /* BiometricAuthentication */,
 				52BA936D2D03A32E00E6415E /* Products */,
 			);
@@ -109,6 +115,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				52BA93C12D04CB6600E6415E /* README.md in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
