@@ -9,20 +9,18 @@ import LocalAuthentication
 import Observation
 import UIKit
 
-enum LoginState: Equatable {
-  case loggedIn
-  case loggedOut
-}
-
 @Observable
 final class ContentViewModel {
   private(set) var loginState: LoginState = .loggedOut
-  private(set) var loginStateIsUpdating: Bool = false
-  var biometryType: LABiometryType = .none
+  private(set) var biometryType: LABiometryType = .none
   
-  private let biometricAuthenticator: BiometricAuthentication = BiometricAuthenticator()
-  private let notificationHapticFeedbackGenerator = UINotificationFeedbackGenerator()
-  private let selectionhapticFeedbackGenerator = UISelectionFeedbackGenerator()
+  @ObservationIgnored private let biometricAuthenticator: BiometricAuthentication = BiometricAuthenticator()
+  
+  // We use haptic feedback generators direectly instead of SwiftUI's sensoryFeedback API due to biometric
+  // authentication cancelling any haptics occurring around the same time as the biometric authentication.
+  // Likely because biometrics (FaceID at least) uses haptics to indidcate authentication result.
+  @ObservationIgnored private let notificationHapticFeedbackGenerator = UINotificationFeedbackGenerator()
+  @ObservationIgnored private let selectionhapticFeedbackGenerator = UISelectionFeedbackGenerator()
   
   init() {
     notificationHapticFeedbackGenerator.prepare()
@@ -32,14 +30,22 @@ final class ContentViewModel {
   }
   
   func authenticate() async {
-    loginStateIsUpdating = true
+    guard loginState != .loggingIn else { return }
     
-    defer {
-      loginStateIsUpdating = false
-    }
+    loginState = .loggingIn
     
     await selectionhapticFeedbackGenerator.selectionChanged()
-    switch await biometricAuthenticator.authenticate() {
+    
+    let authenticationResult = await biometricAuthenticator.authenticate()
+    
+    // If you want to spam biometrics, uncomment the line below
+    // to add an artifical 1.75 sec delay to let the biometric
+    // animations finish. Otherwise we risk undefined behaviour.
+    // try? await Task.sleep(nanoseconds: NSEC_PER_SEC * 7 / 4)
+    
+    guard loginState == .loggingIn else { return }
+    
+    switch authenticationResult {
     case .success:
       loginState = .loggedIn
       
@@ -48,7 +54,9 @@ final class ContentViewModel {
     }
   }
   
-  func logout() {    
+  func logout() {
+    guard loginState != .loggedOut else { return }
+    
     notificationHapticFeedbackGenerator.notificationOccurred(.success)
     loginState = .loggedOut
   }

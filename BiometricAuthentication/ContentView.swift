@@ -10,13 +10,26 @@ import SwiftUI
 struct ContentView: View {
   @State private var viewModel = ContentViewModel()
   @State private var titleTextWidth: CGFloat?
-  @State private var scale: CGFloat = 1
+  @State private var loginButtonScale: CGFloat = 1
+  @State private var logoutButtonScale: CGFloat = 1
   
   var body: some View {
     VStack(alignment: .leading, spacing: 12) {
       biometricAuthenticationImage
       title
-      loginButton
+      
+      ZStack {
+        if viewModel.loginState == .loggedOut || viewModel.loginState == .loggingIn {
+          loginButton
+            .transition(.blurReplace)
+            .id(LocalizedString.loginButtonTitleText)
+        } else if viewModel.loginState == .loggedIn {
+          logoutButton
+            .transition(.blurReplace)
+            .id(LocalizedString.logoutButtonTitleText)
+        }
+      }
+      .animation(.bouncy, value: viewModel.loginState)
     }
   }
   
@@ -35,44 +48,79 @@ struct ContentView: View {
   
   private var loginButton: some View {
     Button {
-      switch viewModel.loginState {
-      case .loggedIn:
-        viewModel.logout()
-        
-      case .loggedOut:
-        Task { await viewModel.authenticate() }
-      }
+      Task { await viewModel.authenticate() }
     } label: {
-      loginButtonTitle
-        .frame(maxWidth: titleTextWidth)
+      buttonTitle(for: .loggedOut)
+        .frame(maxWidth: titleTextWidth, maxHeight: 44)
     }
     .buttonStyle(.borderedProminent)
-    .tint(viewModel.loginState == .loggedIn ? .red : .blue)
+    .tint(.blue)
     .clipped()
-    .disabled(viewModel.loginStateIsUpdating)
     .onLongPressGesture(perform: {}, onPressingChanged: { pressing in
       withAnimation(.easeOut) {
-        scale = pressing ? 0.9 : 1
+        loginButtonScale = pressing ? 0.9 : 1
       }
     })
-    .scaleEffect(scale)
-    .animation(.default, value: viewModel.loginStateIsUpdating)
+    .scaleEffect(loginButtonScale)
+    .onChange(of: viewModel.loginState) { _, newValue in
+      withAnimation(.bouncy) {
+        switch newValue {
+        case .loggedIn:
+          loginButtonScale = 0.8
+          
+        case .loggedOut:
+          loginButtonScale = 1
+          
+        case .loggingIn:
+          break
+        }
+      }
+    }
+    .animation(.default, value: viewModel.loginState)
+    .disabled(viewModel.loginState.isLoginState)
   }
   
-  private var loginButtonTitle: some View {
-    Text(loginButtonTitleText)
+  private var logoutButton: some View {
+    Button {
+        viewModel.logout()
+    } label: {
+      buttonTitle(for: .loggedIn)
+        .frame(maxWidth: titleTextWidth, maxHeight: 44)
+    }
+    .buttonStyle(.borderedProminent)
+    .tint(Color.red)
+    .clipped()
+    .onLongPressGesture(perform: {}, onPressingChanged: { pressing in
+      withAnimation(.easeOut) {
+        logoutButtonScale = pressing ? 0.9 : 1
+      }
+    })
+    .scaleEffect(logoutButtonScale)
+    .onChange(of: viewModel.loginState) { _, newValue in
+      withAnimation(.bouncy) {
+        switch newValue {
+        case .loggedIn:
+          logoutButtonScale = 1
+          
+        case .loggedOut:
+          logoutButtonScale = 0.8
+          
+        case .loggingIn:
+          break
+        }
+      }
+    }
+    .animation(.default, value: viewModel.loginState)
+    .disabled(viewModel.loginState == .loggingIn || viewModel.loginState == .loggedOut)
+  }
+  
+  private func buttonTitle(for loginState: LoginState) -> some View {
+    let title = loginState == .loggedIn ? LocalizedString.logoutButtonTitleText : LocalizedString.loginButtonTitleText
+    
+    return Text(title)
       .fontDesign(.rounded)
       .font(.headline)
       .bold()
-      .lineLimit(2)
-      .allowsTightening(true)
-      .minimumScaleFactor(0.1)
-      .transition(.slide.combined(with: .opacity))
-      .id(loginButtonTitleText)
-  }
-  
-  private var loginButtonTitleText: String {
-    viewModel.loginState == .loggedIn ? LocalizedString.logoutButtonTitleText : LocalizedString.loginButtonTitleText
   }
   
   private var biometricAuthenticationImage: some View {
@@ -108,8 +156,8 @@ struct ContentView: View {
       .aspectRatio(contentMode: .fit)
       .frame(width: 50)
       .foregroundStyle(imageTint)
-      .scaleEffect(viewModel.loginStateIsUpdating ? 0.85 : 1, anchor: .bottom)
-      .animation(viewModel.loginStateIsUpdating ? animation.repeatForever() : animation, value: viewModel.loginStateIsUpdating)
+      .scaleEffect(viewModel.loginState == .loggingIn ? 0.85 : 1, anchor: .bottom)
+      .animation(viewModel.loginState == .loggingIn ? animation.repeatForever() : animation, value: viewModel.loginState)
   }
 }
 
